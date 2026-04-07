@@ -1,0 +1,1140 @@
+<style>
+  :root {
+    --primary: #18a0fb;
+    --primary-hover: #0d8de3;
+    --bg: #1e1e1e;
+    --card-bg: #2b2b2b;
+    --text: #ffffff;
+    --text-muted: #b3b3b3;
+    --border: #444444;
+    --success: #2ecc71;
+    --error: #e74c3c;
+    --input-bg: #3c3c3c;
+  }
+
+  body {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    padding: 0;
+    margin: 0;
+    background-color: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+.content {
+  margin: 16px;
+}
+  .screen {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    height: 100%;
+    overflow-y: auto;
+    box-sizing: border-box;
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .screen::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .screen::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 4px;
+  }
+
+  .screen.active {
+    display: flex;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  h2 {
+    margin: 0 0 24px 0;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  /* Form Styles */
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 24px 0 12px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-title::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .form-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+  }
+
+  label {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  input {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    padding: 10px 12px;
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 13px;
+    outline: none;
+    transition: border 0.2s;
+  }
+
+  input:focus {
+    border-color: var(--primary);
+  }
+
+  /* Upload Area UI */
+  .upload-container {
+    margin-bottom: 24px;
+    position: relative;
+  }
+
+  .upload-box {
+    border: 2px dashed var(--border);
+    padding: 24px;
+    border-radius: 12px;
+    text-align: center;
+    background: var(--card-bg);
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .upload-box:hover {
+    border-color: var(--primary);
+    background: #363636;
+  }
+
+  .upload-box.dragging {
+    border-color: var(--primary);
+    background: rgba(24, 160, 251, 0.1);
+  }
+
+  #file-input {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .color-group-item {
+    background: var(--card-bg);
+    padding: 12px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+  }
+
+  .color-preview {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: #5d10d1;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .role-card {
+    background: var(--card-bg);
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+
+  /* Buttons */
+  .button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: sticky;
+    bottom: 0px;
+    background: var(--bg);
+    padding: 16px;
+    border-top: 1px solid var(--border);
+    z-index: 100;
+    /* width: 100%; */
+  }
+
+  .actions-primary {
+    display: flex;
+    gap: 12px;
+  }
+
+  button {
+    padding: 14px 20px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    flex: 1;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn-primary {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 4px 12px rgba(24, 160, 251, 0.3);
+  }
+
+  .btn-primary:disabled {
+    background: #444;
+    color: #777;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  .btn-secondary {
+    background: #333;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .btn-tertiary {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid transparent;
+    font-size: 13px;
+  }
+
+  .btn-tertiary:hover {
+    color: var(--text);
+  }
+
+  .btn-danger {
+    background: rgba(231, 76, 60, 0.1);
+    color: var(--error);
+    border: 1px solid rgba(231, 76, 60, 0.2);
+  }
+</style>
+</head>
+
+<body>
+  <!-- Unified Main Screen -->
+
+  <div id="main-screen" class="screen active">
+    <div class="content">
+      <h2>ctm316</h2>
+
+      <!-- Upload Option inside Form -->
+      <div class="upload-container">
+        <div class="upload-box" id="drop-zone">
+          <div style="font-size: 24px; margin-bottom: 8px;">📄</div>
+          <div style="font-size: 13px; font-weight: 600;" id="file-label">Import JSON</div>
+          <div style="font-size: 11px; color: var(--text-muted);" id="file-name">Drag or click to load data</div>
+          <input type="file" id="file-input" accept=".json,.js" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>System Name</label>
+        <input type="text" id="form-name" placeholder="R316 Color Token System" />
+      </div>
+
+      <div class="section-title">Core Settings</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Weights Count</label>
+          <input type="number" id="form-weightCount" value="15" min="5" max="30" />
+        </div>
+        <div class="form-group" style="flex: 1.5;">
+          <label>Light Bg (Hex)</label>
+          <input type="text" id="form-lightBg" value="FFFFFF" />
+        </div>
+        <div class="form-group" style="flex: 1.5;">
+          <label>Dark Bg (Hex)</label>
+          <input type="text" id="form-darkBg" value="000000" />
+        </div>
+      </div>
+
+      <div class="section-title">Color Groups</div>
+      <div id="color-groups-container">
+        <!-- Dynamic color groups here -->
+      </div>
+      <button class="btn-secondary" id="add-color-btn" style="padding: 10px; font-size: 12px;">
+        + Add Color Group
+      </button>
+
+      <div class="section-title">Theme Roles</div>
+      <div id="roles-container">
+        <!-- Roles here -->
+      </div>
+      <button class="btn-secondary" id="add-role-btn" style="padding: 10px; font-size: 12px;">
+        + Add Theme Role
+      </button>
+    </div>
+
+    <div class="button-group">
+      <div class="actions-primary">
+        <button id="close-btn" class="btn-tertiary">Close</button>
+        <button id="form-reset-btn" class="btn-secondary">Reset All</button>
+        <button id="form-submit-btn" class="btn-primary" style="flex: 2;">Generate</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Default State
+    let appState = {
+      name: "R316 Color Token System",
+      clrGroups: [
+        { name: "primary", shortName: "Pr", value: "5d10d1" },
+        { name: "secondary", shortName: "Sc", value: "904AAA" },
+        { name: "success", shortName: "Su", value: "47B872" },
+        { name: "danger", shortName: "Dg", value: "ED3E3E" }
+      ],
+      roles: {
+        text: { name: "Text", shortName: "tx", minContrast: "5", gaps: 3 },
+        layer: { name: "Layer", shortName: "ly", minContrast: "1", gaps: 1 },
+        stroke: { name: "Stroke", shortName: "st", minContrast: "1", gaps: 1 },
+        fill: { name: "Fill", shortName: "fi", minContrast: "4", gaps: 2 }
+      },
+      weightCount: 15,
+      lightBg: "FFFFFF",
+      darkBg: "000000"
+    };
+
+    const fileInput = document.getElementById("file-input");
+    const fileName = document.getElementById("file-name");
+    const fileLabel = document.getElementById("file-label");
+    const dropZone = document.getElementById("drop-zone");
+
+    // Screen Management
+    function showScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      const target = document.getElementById(screenId);
+      if (target) target.classList.add('active');
+
+      // Main screen is always large, others (success/error) are compact
+      const size = (screenId === 'main-screen') ? { w: 480, h: 640 } : { w: 340, h: 480 };
+      parent.postMessage({ pluginMessage: { type: "resize", width: size.w, height: size.h } }, "*");
+    }
+
+    // Initial Render
+    updateFormFromState();
+    showScreen('main-screen');
+
+    // Form Rendering
+    function renderColorGroups() {
+      const container = document.getElementById('color-groups-container');
+      container.innerHTML = '';
+      appState.clrGroups.forEach((group, index) => {
+        const item = document.createElement('div');
+        item.className = 'color-group-item';
+        item.id = `group-${index}`;
+        item.innerHTML = `
+            <div class="form-row">
+              <div class="form-group">
+                <label>Group Name</label>
+                <input type="text" class="group-name-input" value="${group.name}" onchange="updateGroup(${index}, 'name', this.value)" />
+                <div class="error-msg" style="color: var(--error); font-size: 10px; display: none;">Name must be unique</div>
+              </div>
+              <div class="form-group" style="flex: 0 0 60px;">
+                <label>Prefix</label>
+                <input type="text" value="${group.shortName}" onchange="updateGroup(${index}, 'shortName', this.value)" />
+              </div>
+            </div>
+            <div class="form-row" style="margin-bottom: 0; align-items: flex-end;">
+              <div class="form-group">
+                <label>Seed Hex</label>
+                <div style="display: flex; gap: 8px;">
+                  <input type="text" style="flex: 1" value="${group.value}" onchange="updateGroup(${index}, 'value', this.value)" />
+                  <input type="color" value="#${group.value.replace('#','')}" style="width: 42px; height: 38px; padding: 0; border: none; cursor: pointer; background: transparent;" oninput="updateGroup(${index}, 'value', this.value.replace('#',''))" />
+                </div>
+              </div>
+              <button class="btn-danger" style="padding: 10px; width: 42px; flex: none;" onclick="removeGroup(${index})">×</button>
+            </div>
+          `;
+        container.appendChild(item);
+      });
+    }
+
+    function renderRoles() {
+      const container = document.getElementById('roles-container');
+      container.innerHTML = '';
+      Object.keys(appState.roles).forEach(key => {
+        const role = appState.roles[key];
+        const card = document.createElement('div');
+        card.className = 'role-card';
+        card.style.marginBottom = '12px';
+        card.innerHTML = `
+            <div class="form-row" style="margin-bottom: 12px; align-items: center;">
+               <div class="form-group">
+                 <input type="text" style="font-weight: 600; font-size: 13px; background: transparent; border: none; padding: 0;" value="${role.name}" onchange="updateRoleKey('${key}', this.value)" />
+               </div>
+               <button class="btn-tertiary" style="flex: none; width: 30px; height: 30px; padding: 0;" onclick="removeRole('${key}')">×</button>
+            </div>
+            <div class="form-row" style="margin-bottom: 0;">
+              <div class="form-group">
+                <label>Min Contrast</label>
+                <input type="number" step="0.1" value="${role.minContrast}" onchange="updateRole('${key}', 'minContrast', this.value)" />
+              </div>
+              <div class="form-group">
+                <label>Gap Step</label>
+                <input type="number" value="${role.gaps}" onchange="updateRole('${key}', 'gaps', this.value)" />
+              </div>
+            </div>
+          `;
+        container.appendChild(card);
+      });
+    }
+
+    function updateGroup(index, key, value) {
+      if (key === 'name') {
+        const isDuplicate = appState.clrGroups.some((g, i) => i !== index && g.name.toLowerCase() === value.toLowerCase());
+        const errorMsg = document.querySelector(`#group-${index} .error-msg`);
+        if (isDuplicate) {
+          errorMsg.style.display = 'block';
+          return;
+        } else {
+          errorMsg.style.display = 'none';
+        }
+      }
+      appState.clrGroups[index][key] = value;
+      if (key === 'value') renderColorGroups();
+    }
+
+    function removeGroup(index) {
+      appState.clrGroups.splice(index, 1);
+      renderColorGroups();
+    }
+
+    function updateRole(key, prop, value) {
+      appState.roles[key][prop] = value;
+    }
+
+    function updateRoleKey(oldKey, newName) {
+      const newKey = newName.toLowerCase().replace(/\s+/g, '-');
+      if (newKey === oldKey) {
+        appState.roles[oldKey].name = newName;
+        return;
+      }
+      appState.roles[newKey] = { ...appState.roles[oldKey], name: newName };
+      delete appState.roles[oldKey];
+      renderRoles();
+    }
+
+    function addRole() {
+      const id = Date.now().toString(36);
+      appState.roles[id] = { name: "New Role", shortName: id.slice(0,2), minContrast: "4.5", gaps: 2 };
+      renderRoles();
+    }
+
+    function removeRole(key) {
+      delete appState.roles[key];
+      renderRoles();
+    }
+
+    document.getElementById('add-role-btn').onclick = addRole;
+
+    function updateFormFromState() {
+      document.getElementById('form-name').value = appState.name;
+      document.getElementById('form-weightCount').value = appState.weightCount;
+      document.getElementById('form-lightBg').value = appState.lightBg;
+      document.getElementById('form-darkBg').value = appState.darkBg;
+      renderColorGroups();
+      renderRoles();
+    }
+
+    document.getElementById('add-color-btn').onclick = () => {
+      appState.clrGroups.push({ name: `color-${appState.clrGroups.length + 1}`, shortName: "Nc", value: "888888" });
+      renderColorGroups();
+    };
+
+    // File Logic
+    fileInput.onchange = (e) => handleFile(e.target.files[0]);
+    dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add("dragging"); };
+    dropZone.ondragleave = () => dropZone.classList.remove("dragging");
+    dropZone.ondrop = (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("dragging");
+      handleFile(e.dataTransfer.files[0]);
+    };
+
+    function handleFile(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          let cleaned = event.target.result.trim();
+          if (cleaned.includes("{") && cleaned.includes("}")) {
+            cleaned = cleaned.substring(cleaned.indexOf("{"), cleaned.lastIndexOf("}") + 1);
+          }
+          const data = JSON.parse(cleaned);
+          appState = { ...appState, ...data };
+          updateFormFromState();
+          fileLabel.textContent = "Data Imported";
+          fileName.textContent = file.name;
+        } catch (err) {
+          document.getElementById("error-text").textContent = "Invalid format: " + err.message;
+          showScreen("error-screen");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Submit Logic
+    function executeRun(data) {
+      showScreen("loading-screen");
+      setTimeout(() => {
+        try {
+          const processedResult = variableMaker(data);
+          parent.postMessage({ pluginMessage: { type: "run-creater", data: processedResult } }, "*");
+        } catch (err) {
+          document.getElementById("error-text").textContent = "Error: " + err.message;
+          showScreen("error-screen");
+        }
+      }, 100);
+    }
+
+    document.getElementById("form-submit-btn").onclick = () => {
+      appState.name = document.getElementById('form-name').value;
+      appState.weightCount = parseInt(document.getElementById('form-weightCount').value);
+      appState.lightBg = document.getElementById('form-lightBg').value;
+      appState.darkBg = document.getElementById('form-darkBg').value;
+      executeRun(appState);
+    };
+
+    document.getElementById("form-reset-btn").onclick = () => {
+      if (confirm("Reset all customizations?")) location.reload();
+    };
+
+    document.getElementById("close-btn").onclick = () => {
+      parent.postMessage({ pluginMessage: { type: "cancel" } }, "*");
+    };
+
+    // Message Handling
+    window.addEventListener('message', (event) => {
+      const msg = event.data.pluginMessage;
+      if (msg && msg.type === "finish") {
+        const tally = msg.tally || { created: 0, updated: 0, failed: 0 };
+        document.getElementById("tally-created").textContent = tally.created;
+        document.getElementById("tally-updated").textContent = tally.updated;
+        document.getElementById("tally-failed").textContent = tally.failed;
+        showScreen("success-screen");
+      }
+    });
+
+    document.getElementById("success-done-btn").onclick = () => {
+      parent.postMessage({ pluginMessage: { type: "cancel" } }, "*");
+    };
+
+    document.getElementById("error-back-btn").onclick = () => {
+      showScreen("main-screen");
+    };
+  </script>
+
+  <script id="input handler">
+    // Utills generator
+    function validHex(hex) {
+      if (typeof hex !== "string") return false;
+      return /^#?([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(hex.trim());
+    }
+
+    function normalizeHex(hex) {
+      if (!validHex(hex)) return null;
+      hex = hex.trim().replace(/^#/, "");
+      if (hex.length === 3) {
+        hex = hex
+          .split("")
+          .map((c) => c + c)
+          .join("");
+      }
+      return "#" + hex.toUpperCase();
+    }
+
+    function hexToRgb(hex) {
+      const nhex = normalizeHex(hex);
+      if (!nhex) return null;
+      const h = nhex.replace(/^#/, "");
+      const bigint = parseInt(h, 16);
+      return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
+    }
+
+    function rgbToHsl(r, g, b) {
+      if ([r, g, b].some((v) => typeof v !== "number" || v < 0 || v > 255)) return null;
+      r /= 255;
+      g /= 255;
+      b /= 255;
+      let max = Math.max(r, g, b),
+        min = Math.min(r, g, b);
+      let h,
+        s,
+        l = (max + min) / 2;
+      if (max === min) {
+        h = s = 0;
+      } else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r:
+            h = (g - b) / d + (g < b ? 6 : 0);
+            break;
+          case g:
+            h = (b - r) / d + 2;
+            break;
+          default:
+            h = (r - g) / d + 4;
+            break;
+        }
+        h = h * 60;
+      }
+      return [Math.round(h), Math.round(s * 100), Math.round(l * 100)];
+    }
+
+    function hexToHsl(hex) {
+      const rgb = hexToRgb(hex);
+      if (!rgb) return null;
+      return rgbToHsl(...rgb);
+    }
+
+    function hexToHue(hex) {
+      const hsl = hexToHsl(hex);
+      return hsl ? hsl[0] : null;
+    }
+
+    function hexToSat(hex) {
+      const hsl = hexToHsl(hex);
+      return hsl ? hsl[1] : null;
+    }
+
+    function hexToLum(hex) {
+      const hsl = hexToHsl(hex);
+      return hsl ? hsl[2] : null;
+    }
+
+    function hslToRgb(h, s, l) {
+      if (typeof h !== "number" || typeof s !== "number" || typeof l !== "number" || h < 0 || h > 360 || s < 0 || s > 100 || l < 0 || l > 100) return null;
+      s /= 100;
+      l /= 100;
+      const c = (1 - Math.abs(2 * l - 1)) * s;
+      const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+      const m = l - c / 2;
+      let r = 0,
+        g = 0,
+        b = 0;
+      if (h < 60) [r, g, b] = [c, x, 0];
+      else if (h < 120) [r, g, b] = [x, c, 0];
+      else if (h < 180) [r, g, b] = [0, c, x];
+      else if (h < 240) [r, g, b] = [0, x, c];
+      else if (h < 300) [r, g, b] = [x, 0, c];
+      else[r, g, b] = [c, 0, x];
+      return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+    }
+
+    function rgbToHex(r, g, b) {
+      if ([r, g, b].some((v) => typeof v !== "number" || v < 0 || v > 255)) return null;
+      const hex = ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+      return "#" + hex;
+    }
+
+    function hslToHex(h, s, l) {
+      const rgb = hslToRgb(h, s, l);
+      if (!rgb) return null;
+      return rgbToHex(...rgb);
+    }
+
+    function relLum(hex) {
+      const rgb = hexToRgb(hex);
+      if (!rgb) return null;
+      const linear = rgb.map((v) => {
+        const x = v / 255;
+        return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+      });
+      const [r, g, b] = linear;
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    }
+
+    function contrastRatio(hex1, hex2) {
+      const n1 = normalizeHex(hex1);
+      const n2 = normalizeHex(hex2);
+      if (!n1 || !n2) return null;
+      const lum1 = relLum(n1);
+      const lum2 = relLum(n2);
+      if (lum1 === null || lum2 === null) return null;
+      const high = Math.max(lum1, lum2);
+      const low = Math.min(lum1, lum2);
+      return Number(((high + 0.05) / (low + 0.05)).toFixed(2));
+    }
+
+    function contrastRating(hex1, hex2) {
+      const ratio = contrastRatio(hex1, hex2);
+      if (ratio === null) return null;
+      if (ratio < 3) return "Fail";
+      if (ratio < 4.5) return "AA Large";
+      if (ratio < 7) return "AA";
+      return "AAA";
+    }
+
+    function seriesMaker(x) {
+      const out = [];
+      for (let i = 1; i <= x; i++) out.push(i);
+      return out;
+    }
+
+    // function colorCalSplit(hexIn, weights) {
+    //   const hsl = hexToHsl(hexIn);
+    //   if (!hsl) return [];
+    //   const [hue, satu, lumn] = hsl;
+    //   const len = weights.length;
+    //   const midPoint = Math.ceil(len / 2);
+    //   const leftCount = midPoint - 1;
+    //   const rightCount = len - midPoint;
+
+    //   // avoid divide by zero
+    //   const darkGap = leftCount > 0 ? lumn / (leftCount + 1) : lumn;
+    //   const lightGap = rightCount > 0 ? (100 - lumn) / (rightCount + 1) : 100 - lumn;
+
+    //   const lumSeq = [];
+    //   // generate darker steps
+    //   for (let i = leftCount; i >= 1; i--) {
+    //     lumSeq.push(Math.max(0, lumn - i * darkGap));
+    //   }
+    //   // center
+    //   lumSeq.push(lumn);
+    //   // lighter steps
+    //   for (let i = 1; i <= rightCount; i++) {
+    //     lumSeq.push(Math.min(100, lumn + i * lightGap));
+    //   }
+
+    //   // map to hex and ensure resulting length == len
+    //   const output = lumSeq.slice(0, len).map((L) => hslToHex(hue, satu, Math.round(L)));
+    //   // ensure values are normalized (hslToHex already returns #RRGGBB or null)
+    //   return output.map((v) => v || "#000000");
+    // }
+
+    function colorStepsMaker(hexIn, weights) {
+      const hue = hexToHue(hexIn);
+      const satu = hexToSat(hexIn);
+      const len = weights.length;
+
+      // To match the contrast calculator (CR = (Y1 + 0.05)/(Y2 + 0.05)),
+      // we must linearly space the logarithmic values of (Y + 0.05).
+      // This guarantees an identical contrast ratio between every adjacent shade!
+      const minL = 0; // Absolute black
+      const maxL = 1; // Absolute white
+      const minV = Math.log(minL + 0.05);
+      const maxV = Math.log(maxL + 0.05);
+      const step = (maxV - minV) / (len + 1);
+
+      const output = [];
+
+      for (let i = 1; i <= len; i++) {
+        // Calculate the target perceived luminance mathematically using the contrast scale
+        const targetV = minV + step * i;
+        const targetLum = Math.exp(targetV) - 0.05;
+
+        // Binary search for the L value that achieves the target luminance for our specific hue and saturation
+        let low = 0;
+        let high = 100;
+        let closestL = 50;
+
+        for (let j = 0; j < 30; j++) {
+          let mid = (low + high) / 2;
+          let midHex = hslToHex(hue, satu, mid);
+          let midLum = relLum(midHex);
+
+          closestL = mid;
+
+          // Stop early if target luminance matches
+          if (Math.abs(midLum - targetLum) < 0.0001) {
+            break;
+          }
+
+          if (midLum < targetLum) {
+            low = mid;
+          } else {
+            high = mid;
+          }
+        }
+
+        // Map optimal L back to precise color hex
+        output.push(hslToHex(hue, satu, closestL) || "#000000");
+      }
+
+      return output;
+    }
+
+    function slugify(str) {
+      if (!str) return "";
+      return str
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, "")
+        .replace(/[\s_-]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    }
+
+    // Color generator
+    // ##########################################################################################
+    // ##########################################################################################
+    // ##########################################################################################
+    // COLOR SYSTEM
+    const colorScheme = {
+      name: "R316 Color Token System",
+      clrGroups: [
+        { name: "primary", shortName: "Pr", value: "5d10d1" },
+        { name: "secondary", shortName: "Sc", value: "904AAA" },
+        { name: "tertiary", shortName: "Te", value: "7E8088" },
+        { name: "black", shortName: "Bk", value: "1C2230" },
+        { name: "gray", shortName: "Gr", value: "87899D" },
+        { name: "success", shortName: "Su", value: "47B872" },
+        { name: "danger", shortName: "Dg", value: "ED3E3E" },
+        { name: "warning", shortName: "Wg", value: "F2AA30" },
+        { name: "info", shortName: "In", value: "206BB0" },
+      ],
+      roles: {
+        text: { name: "Text", shortName: "tx", minContrast: "5", gaps: 3 },
+        layer: { name: "Layer", shortName: "ly", minContrast: "0", gaps: 1 },
+        stroke: { name: "Stroke", shortName: "st", minContrast: "1", gaps: 1 },
+        fill: { name: "Fill", shortName: "fi", minContrast: "4", gaps: 2 },
+      },
+      variations: {
+        weakest: { name: "Weakest", code: "1" },
+        weak: { name: "Weak", code: "2" },
+        base: { name: "Base", code: "3" },
+        strong: { name: "Strong", code: "4" },
+        stronger: { name: "Stronger", code: "5" },
+      },
+      weightCount: 23,
+      lightBg: "FFFFFF",
+      darkBg: "000000",
+      weightNames: "",
+    };
+
+    // CACHE FOR FREQUENT CALLS
+    // ============================================================================
+    const colorCache = new Map();
+    let lastInputHash = null;
+    let cachedOutput = null;
+
+    // COLOR SYSTEM GENERATOR
+    // ============================================================================
+    function variableMaker(clrSys) {
+      // Return cached result if the inputs haven't changed to avoid recalculating
+      const inputHash = JSON.stringify({
+        clrGroups: clrSys.clrGroups.map((g) => ({
+          ...g,
+          value: normalizeHex(g.value),
+        })),
+        weightCount: clrSys.weightCount,
+        lightBg: normalizeHex(clrSys.lightBg),
+        darkBg: normalizeHex(clrSys.darkBg),
+        roles: clrSys.roles,
+      });
+
+      if (inputHash === lastInputHash && cachedOutput) {
+        return cachedOutput;
+      }
+
+      const clrGroups = clrSys.clrGroups;
+      const clrRoles = clrSys.roles;
+      const clrWeights = seriesMaker(clrSys.weightCount);
+
+      // Pre-calculate normalized backgrounds
+      const lightBg = normalizeHex(clrSys.lightBg) || "#FFFFFF";
+      const darkBg = normalizeHex(clrSys.darkBg) || "#000000";
+
+      // Pre-allocate objects with known structures
+      const rawVarObj = Object.create(null);
+      const conVarObj = {
+        light: Object.create(null),
+        dark: Object.create(null),
+      };
+
+      const weightCount = clrWeights.length;
+
+      // Pre-calculate weight indices over all weights
+      const weightIndices = new Array(weightCount);
+      for (let i = 0; i < weightCount; i++) weightIndices[i] = i;
+
+      const errors = { critical: [], warnings: [], notices: [] };
+
+      // RAW COLORS GENERATION
+      // ========================================================================================================================================================
+      for (let gIdx = 0; gIdx < clrGroups.length; gIdx++) {
+        const group = clrGroups[gIdx];
+        const groupName = group.name;
+        const seed = normalizeHex(group.value) || "#000000";
+
+        // Batch generate colors to cover all defined weights
+        const colorVars = colorStepsMaker(seed, clrWeights);
+        colorVars.reverse(); // Values map from lightest to darkest weights
+
+        const rawGroupObj = Object.create(null);
+        rawVarObj[groupName] = rawGroupObj;
+
+        // Evaluate contrasts against both light and dark modes
+        for (let wIdx = 0; wIdx < weightCount; wIdx++) {
+          const weight = clrWeights[wIdx];
+          const value = normalizeHex(colorVars[wIdx]) || seed;
+
+          // Extract ratio values efficiently without redundancy
+          const lightContrast = contrastRatio(value, lightBg);
+          const darkContrast = contrastRatio(value, darkBg);
+
+          rawGroupObj[weight] = {
+            value,
+            tknName: `${groupName}-${weight}`,
+            shortName: `${group.shortName}-${weight}`,
+            contrast: {
+              light: {
+                ratio: lightContrast,
+                rating: contrastRating(value, lightBg),
+              },
+              dark: {
+                ratio: darkContrast,
+                rating: contrastRating(value, darkBg),
+              },
+            },
+          };
+        }
+      }
+
+      // Check if a base index can satisfy all expected scale variations
+      function canUseBaseIndex(groupName, baseIdx, role, themeName) {
+        const gap = role.gaps;
+        const maxOffset = 2 * gap; // Needs space for weakest (-2*gap) and stronger (+2*gap)
+
+        // A set can be made reasonably if there is enough space on both ends
+        // to step out the variations without crossing index 0 or weightCount - 1.
+        return baseIdx - maxOffset >= 0 && baseIdx + maxOffset < weightCount;
+      }
+
+      // CONTEXTUAL TOKENS GENERATION
+      // ========================================================================================================================================================
+      const themes = [
+        { name: "light", bg: lightBg },
+        { name: "dark", bg: darkBg },
+      ];
+
+      // Process themes to output contextual matching variations
+      for (const theme of themes) {
+        const themeName = theme.name;
+        const conTheme = conVarObj[themeName];
+
+        for (const clr of clrGroups) {
+          const clrName = clr.name;
+          const conGroup = Object.create(null);
+          conTheme[clrName] = conGroup;
+          const roleNames = Object.keys(clrRoles);
+
+          for (const roleName of roleNames) {
+            const role = clrRoles[roleName];
+            const gap = role.gaps;
+            const minC = parseFloat(role.minContrast);
+            const conRole = Object.create(null);
+            conGroup[roleName] = conRole;
+
+            // Find Usable Base Index
+            let baseIdx = -1;
+
+            // Use contextual contrast to determine direction of "stronger" (higher contrast)
+            const highestWeight = clrWeights[weightCount - 1];
+            const lowestWeight = clrWeights[0];
+            const cEnd = rawVarObj[clrName][highestWeight].contrast[themeName].ratio;
+            const cStart = rawVarObj[clrName][lowestWeight].contrast[themeName].ratio;
+
+            // If the darkest color (end) has more contrast, positive index adds contrast.
+            // If the lightest color (start) has more contrast, positive index removes contrast.
+            const contrastGrowthDir = cEnd > cStart ? 1 : -1;
+
+            const isDarkTheme = themeName === "dark";
+
+            if (isDarkTheme) {
+              for (let i = weightCount - 1; i >= 0; i--) {
+                const weight = clrWeights[i];
+                const c = rawVarObj[clrName][weight].contrast[themeName].ratio;
+
+                if (c >= minC) {
+                  baseIdx = i;
+                  break;
+                }
+              }
+            } else {
+              for (let i = 0; i < weightCount; i++) {
+                const weight = clrWeights[i];
+                const c = rawVarObj[clrName][weight].contrast[themeName].ratio;
+
+                if (c >= minC) {
+                  baseIdx = i;
+                  break;
+                }
+              }
+            }
+
+            // FALLBACK: If bounds constraints or general availability prevented a match
+            if (baseIdx === -1) {
+              let bestIdx = -1;
+              let maxContrast = -1;
+
+              // Find the color that has MAXIMUM possible contrast
+              for (let i = 0; i < weightCount; i++) {
+                const weight = clrWeights[i];
+                const c = rawVarObj[clrName][weight].contrast[themeName].ratio;
+
+                if (c > maxContrast) {
+                  bestIdx = i;
+                  maxContrast = c;
+                }
+              }
+
+              if (bestIdx !== -1) {
+                baseIdx = bestIdx;
+                errors.critical.push({
+                  color: clrName,
+                  role: roleName,
+                  theme: themeName,
+                  error: `Cannot meet minimum contrast ${minC}. using closest available (${maxContrast.toFixed(2)}).`,
+                });
+              } else {
+                baseIdx = weightCount >> 1; // Integer division by 2
+                errors.critical.push({
+                  color: clrName,
+                  role: roleName,
+                  theme: themeName,
+                  error: "Cannot evaluate contrast for any weight.",
+                });
+              }
+            }
+
+            // Clamp base index to boundaries to prevent array overflow
+            // ============================================================================
+            const maxOffset = 2 * gap;
+            // Determine safe min and max boundaries
+            const minAllowed = maxOffset;
+            const maxAllowed = weightCount - 1 - maxOffset;
+
+            if (baseIdx < minAllowed) baseIdx = minAllowed;
+            if (baseIdx > maxAllowed) baseIdx = maxAllowed;
+
+            // Generate Contextual Variations
+            // ============================================================================
+            // Define standard token position offsets
+            const offsetValues = [
+              { key: "weakest", offset: -2 * gap },
+              { key: "weak", offset: -gap },
+              { key: "base", offset: 0 },
+              { key: "strong", offset: gap },
+              { key: "stronger", offset: 2 * gap },
+            ];
+
+            for (let vIdx = 0; vIdx < offsetValues.length; vIdx++) {
+              const { key: variation, offset: pureOffset } = offsetValues[vIdx];
+
+              // Ensure stronger ALWAYS means higher contrast relative to background!
+              let idx = baseIdx + pureOffset * contrastGrowthDir;
+              let adjusted = false;
+
+              // Clamp to valid range
+              if (idx < 0) {
+                idx = 0;
+                adjusted = true;
+              } else if (idx >= weightCount) {
+                idx = weightCount - 1;
+                adjusted = true;
+              }
+
+              const weight = clrWeights[idx];
+              const data = rawVarObj[clrName][weight];
+
+              conRole[variation] = {
+                value: data.value,
+                contrastRatio: data.contrast[themeName].ratio,
+                contrastRating: data.contrast[themeName].rating,
+                valueRef: data.tknName,
+                tknRole: roleName,
+                roleName: role.name, // Display name
+                tknClGroup: clrName,
+                weight,
+                variationOffset: pureOffset,
+                isAdjusted: adjusted,
+              };
+
+              if (adjusted) {
+                errors.warnings.push({
+                  color: clrName,
+                  role: roleName,
+                  variation,
+                  theme: themeName,
+                  warning: `Variation '${variation}' clamped due to overflow`,
+                });
+              }
+            }
+          }
+        }
+      }
+      // Preparing Output
+      const output = {
+        raw: rawVarObj,
+        ctx: conVarObj,
+        errors,
+        backgrounds: {
+          light: normalizeHex(lightBg),
+          dark: normalizeHex(darkBg),
+        },
+        metadata: {
+          groups: clrGroups.length,
+          weights: weightCount,
+          roles: Object.keys(clrRoles).length,
+          themes: 2,
+        },
+      };
+
+      // Cache the result
+      lastInputHash = inputHash;
+      cachedOutput = output;
+      // For debugging: Log primary fill base colors
+      console.log(output);
+
+      return output;
+    }
+  </script>
+</body>
+
+</html>
