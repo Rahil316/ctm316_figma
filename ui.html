@@ -1,4 +1,10 @@
 <style>
+  * {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+  }
+
   :root {
     --primary: #18a0fb;
     --primary-hover: #0d8de3;
@@ -24,26 +30,54 @@
     overflow: hidden;
     box-sizing: border-box;
   }
-.content {
-  margin: 16px;
-}
+
+  .content {
+    margin: 16px;
+  }
+
+  .col3 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(96px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
   .screen {
-    display: flex;
+    display: none;
     flex-direction: column;
     gap: 4px;
     height: 100%;
     overflow-y: auto;
     box-sizing: border-box;
     animation: fadeIn 0.3s ease-out;
+    overflow-y: overlay;
   }
 
   .screen::-webkit-scrollbar {
-    width: 8px;
+    width: 10px;
+    background-color: transparent;
   }
 
   .screen::-webkit-scrollbar-thumb {
     background: #444;
-    border-radius: 4px;
+    border-radius: 10px;
+    border: 3px solid var(--bg);
+  }
+
+  .screen::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+
+  #resize-handle {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    width: 16px;
+    height: 16px;
+    cursor: nwse-resize;
+    z-index: 1000;
+    background: linear-gradient(135deg, transparent 50%, rgba(255, 255, 255, 0.2) 50%);
+    border-radius: 0 0 8px 0;
   }
 
   .screen.active {
@@ -183,25 +217,22 @@
   }
 
   /* Buttons */
-  .button-group {
-    display: flex;
-    flex-direction: column;
+  .header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    align-items: center;
     gap: 8px;
     position: sticky;
-    bottom: 0px;
+    top: 0px;
     background: var(--bg);
-    padding: 16px;
-    border-top: 1px solid var(--border);
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
     z-index: 100;
     /* width: 100%; */
   }
 
-  .actions-primary {
-    display: flex;
-    gap: 12px;
-  }
-
   button {
+    height: 32px;
     padding: 14px 20px;
     border-radius: 10px;
     border: none;
@@ -218,6 +249,8 @@
 
   .btn-primary {
     background: var(--primary);
+    height: 32px;
+    max-height: 32px;
     color: white;
     box-shadow: 0 4px 12px rgba(24, 160, 251, 0.3);
   }
@@ -249,17 +282,42 @@
   .btn-danger {
     background: rgba(231, 76, 60, 0.1);
     color: var(--error);
-    border: 1px solid rgba(231, 76, 60, 0.2);
+    /* border: 1px solid var(--error); */
+    width: 36px;
+    max-width: 36px;
+    height: 36px;
+    max-height: 36px;
+    padding: 0;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-left-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 </style>
+
 </head>
 
 <body>
   <!-- Unified Main Screen -->
-
   <div id="main-screen" class="screen active">
+    <div class="header">
+      <h1 style="margin: 0; line-height: 32px;">ctm316</h1>
+      <button id="close-btn" class="btn-tertiary">Close</button>
+      <button id="form-reset-btn" class="btn-secondary">Reset</button>
+      <button id="form-submit-btn" class="btn-primary" style="flex: 2;">Run</button>
+    </div>
     <div class="content">
-      <h2>ctm316</h2>
 
       <!-- Upload Option inside Form -->
       <div class="upload-container">
@@ -275,23 +333,21 @@
         <label>System Name</label>
         <input type="text" id="form-name" placeholder="R316 Color Token System" />
       </div>
-
       <div class="section-title">Core Settings</div>
-      <div class="form-row">
+      <div class="col3">
         <div class="form-group">
           <label>Weights Count</label>
           <input type="number" id="form-weightCount" value="15" min="5" max="30" />
         </div>
-        <div class="form-group" style="flex: 1.5;">
-          <label>Light Bg (Hex)</label>
+        <div class="form-group">
+          <label>Light theme bg</label>
           <input type="text" id="form-lightBg" value="FFFFFF" />
         </div>
-        <div class="form-group" style="flex: 1.5;">
-          <label>Dark Bg (Hex)</label>
+        <div class="form-group">
+          <label>Dark theme bg</label>
           <input type="text" id="form-darkBg" value="000000" />
         </div>
       </div>
-
       <div class="section-title">Color Groups</div>
       <div id="color-groups-container">
         <!-- Dynamic color groups here -->
@@ -309,18 +365,58 @@
       </button>
     </div>
 
-    <div class="button-group">
-      <div class="actions-primary">
-        <button id="close-btn" class="btn-tertiary">Close</button>
-        <button id="form-reset-btn" class="btn-secondary">Reset All</button>
-        <button id="form-submit-btn" class="btn-primary" style="flex: 2;">Generate</button>
-      </div>
+
+  </div>
+
+  <!-- Loading Screen -->
+  <div id="loading-screen" class="screen">
+    <div class="content" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 16px;">
+      <div class="spinner"></div>
+      <div style="font-weight: 600;">Processing Variables...</div>
+      <div style="font-size: 12px; color: var(--text-muted); text-align: center;">This may take a moment depending on the scale.</div>
     </div>
   </div>
 
+  <!-- Success Screen -->
+  <div id="success-screen" class="screen">
+    <div class="content" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 24px;">
+      <div style="font-size: 48px; margin-bottom: 24px;">✅</div>
+      <h2 style="margin-bottom: 8px;">Success!</h2>
+      <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 32px;">Variables generated and synced successfully.</p>
+
+      <div style="background: var(--card-bg); padding: 16px; border-radius: 12px; width: 100%; margin-bottom: 32px; border: 1px solid var(--border);">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+          <span style="color: var(--text-muted);">Created:</span>
+          <span id="tally-created" style="font-weight: 600;">0</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+          <span style="color: var(--text-muted);">Updated:</span>
+          <span id="tally-updated" style="font-weight: 600;">0</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-muted);">Failed:</span>
+          <span id="tally-failed" style="font-weight: 600; color: var(--error);">0</span>
+        </div>
+      </div>
+
+      <button id="success-done-btn" class="btn-primary" style="width: 100%;">Close</button>
+    </div>
+  </div>
+
+  <!-- Error Screen -->
+  <div id="error-screen" class="screen">
+    <div class="content" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 24px;">
+      <div style="font-size: 48px; margin-bottom: 24px;">⚠️</div>
+      <h2 style="margin-bottom: 8px; color: var(--error);">Something went wrong</h2>
+      <p id="error-text" style="color: var(--text-muted); font-size: 13px; margin-bottom: 32px; word-break: break-word;"></p>
+      <button id="error-back-btn" class="btn-secondary" style="width: 100%;">Go Back</button>
+    </div>
+  </div>
+  <div id="resize-handle"></div>
+
   <script>
-    // Default State
-    let appState = {
+    // Default State Template
+    const DEFAULT_STATE = {
       name: "R316 Color Token System",
       clrGroups: [
         { name: "primary", shortName: "Pr", value: "5d10d1" },
@@ -339,6 +435,8 @@
       darkBg: "000000"
     };
 
+    let appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+
     const fileInput = document.getElementById("file-input");
     const fileName = document.getElementById("file-name");
     const fileLabel = document.getElementById("file-label");
@@ -349,10 +447,6 @@
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       const target = document.getElementById(screenId);
       if (target) target.classList.add('active');
-
-      // Main screen is always large, others (success/error) are compact
-      const size = (screenId === 'main-screen') ? { w: 480, h: 640 } : { w: 340, h: 480 };
-      parent.postMessage({ pluginMessage: { type: "resize", width: size.w, height: size.h } }, "*");
     }
 
     // Initial Render
@@ -384,7 +478,7 @@
                 <label>Seed Hex</label>
                 <div style="display: flex; gap: 8px;">
                   <input type="text" style="flex: 1" value="${group.value}" onchange="updateGroup(${index}, 'value', this.value)" />
-                  <input type="color" value="#${group.value.replace('#','')}" style="width: 42px; height: 38px; padding: 0; border: none; cursor: pointer; background: transparent;" oninput="updateGroup(${index}, 'value', this.value.replace('#',''))" />
+                  <input type="color" value="#${group.value.replace('#', '')}" style="width: 42px; height: 38px; padding: 0; border: none; cursor: pointer; background: transparent;" oninput="updateGroup(${index}, 'value', this.value.replace('#',''))" />
                 </div>
               </div>
               <button class="btn-danger" style="padding: 10px; width: 42px; flex: none;" onclick="removeGroup(${index})">×</button>
@@ -405,9 +499,9 @@
         card.innerHTML = `
             <div class="form-row" style="margin-bottom: 12px; align-items: center;">
                <div class="form-group">
-                 <input type="text" style="font-weight: 600; font-size: 13px; background: transparent; border: none; padding: 0;" value="${role.name}" onchange="updateRoleKey('${key}', this.value)" />
+                 <input type="text" style="font-weight: 600; font-size: 13px; background: transparent; border: none; padding: 0; height:36px" value="${role.name}" onchange="updateRoleKey('${key}', this.value)" />
                </div>
-               <button class="btn-tertiary" style="flex: none; width: 30px; height: 30px; padding: 0;" onclick="removeRole('${key}')">×</button>
+               <button class="btn-danger" onclick="removeRole('${key}')">×</button>
             </div>
             <div class="form-row" style="margin-bottom: 0;">
               <div class="form-group">
@@ -461,7 +555,7 @@
 
     function addRole() {
       const id = Date.now().toString(36);
-      appState.roles[id] = { name: "New Role", shortName: id.slice(0,2), minContrast: "4.5", gaps: 2 };
+      appState.roles[id] = { name: "New Role", shortName: id.slice(0, 2), minContrast: "4.5", gaps: 2 };
       renderRoles();
     }
 
@@ -541,7 +635,13 @@
     };
 
     document.getElementById("form-reset-btn").onclick = () => {
-      if (confirm("Reset all customizations?")) location.reload();
+      if (confirm("Reset everything to default settings?")) {
+        appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+        updateFormFromState();
+        fileLabel.textContent = "Import JSON";
+        fileName.textContent = "Drag or click to load data";
+        fileInput.value = "";
+      }
     };
 
     document.getElementById("close-btn").onclick = () => {
@@ -558,6 +658,10 @@
         document.getElementById("tally-failed").textContent = tally.failed;
         showScreen("success-screen");
       }
+      if (msg && msg.type === "error") {
+        document.getElementById("error-text").textContent = msg.message;
+        showScreen("error-screen");
+      }
     });
 
     document.getElementById("success-done-btn").onclick = () => {
@@ -566,6 +670,31 @@
 
     document.getElementById("error-back-btn").onclick = () => {
       showScreen("main-screen");
+    };
+
+    // Manual Resize Logic
+    const handle = document.getElementById('resize-handle');
+    let down = false;
+    let startW, startH, startX, startY;
+
+    handle.onmousedown = (e) => {
+      down = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      startW = window.innerWidth;
+      startH = window.innerHeight;
+      e.preventDefault();
+    };
+
+    window.onmousemove = (e) => {
+      if (!down) return;
+      const nw = startW + (e.clientX - startX);
+      const nh = startH + (e.clientY - startY);
+      parent.postMessage({ pluginMessage: { type: 'resize', width: Math.max(300, nw), height: Math.max(300, nh) } }, '*');
+    };
+
+    window.onmouseup = () => {
+      down = false;
     };
   </script>
 
@@ -717,37 +846,6 @@
       return out;
     }
 
-    // function colorCalSplit(hexIn, weights) {
-    //   const hsl = hexToHsl(hexIn);
-    //   if (!hsl) return [];
-    //   const [hue, satu, lumn] = hsl;
-    //   const len = weights.length;
-    //   const midPoint = Math.ceil(len / 2);
-    //   const leftCount = midPoint - 1;
-    //   const rightCount = len - midPoint;
-
-    //   // avoid divide by zero
-    //   const darkGap = leftCount > 0 ? lumn / (leftCount + 1) : lumn;
-    //   const lightGap = rightCount > 0 ? (100 - lumn) / (rightCount + 1) : 100 - lumn;
-
-    //   const lumSeq = [];
-    //   // generate darker steps
-    //   for (let i = leftCount; i >= 1; i--) {
-    //     lumSeq.push(Math.max(0, lumn - i * darkGap));
-    //   }
-    //   // center
-    //   lumSeq.push(lumn);
-    //   // lighter steps
-    //   for (let i = 1; i <= rightCount; i++) {
-    //     lumSeq.push(Math.min(100, lumn + i * lightGap));
-    //   }
-
-    //   // map to hex and ensure resulting length == len
-    //   const output = lumSeq.slice(0, len).map((L) => hslToHex(hue, satu, Math.round(L)));
-    //   // ensure values are normalized (hslToHex already returns #RRGGBB or null)
-    //   return output.map((v) => v || "#000000");
-    // }
-
     function colorStepsMaker(hexIn, weights) {
       const hue = hexToHue(hexIn);
       const satu = hexToSat(hexIn);
@@ -814,39 +912,6 @@
     // ##########################################################################################
     // ##########################################################################################
     // ##########################################################################################
-    // COLOR SYSTEM
-    const colorScheme = {
-      name: "R316 Color Token System",
-      clrGroups: [
-        { name: "primary", shortName: "Pr", value: "5d10d1" },
-        { name: "secondary", shortName: "Sc", value: "904AAA" },
-        { name: "tertiary", shortName: "Te", value: "7E8088" },
-        { name: "black", shortName: "Bk", value: "1C2230" },
-        { name: "gray", shortName: "Gr", value: "87899D" },
-        { name: "success", shortName: "Su", value: "47B872" },
-        { name: "danger", shortName: "Dg", value: "ED3E3E" },
-        { name: "warning", shortName: "Wg", value: "F2AA30" },
-        { name: "info", shortName: "In", value: "206BB0" },
-      ],
-      roles: {
-        text: { name: "Text", shortName: "tx", minContrast: "5", gaps: 3 },
-        layer: { name: "Layer", shortName: "ly", minContrast: "0", gaps: 1 },
-        stroke: { name: "Stroke", shortName: "st", minContrast: "1", gaps: 1 },
-        fill: { name: "Fill", shortName: "fi", minContrast: "4", gaps: 2 },
-      },
-      variations: {
-        weakest: { name: "Weakest", code: "1" },
-        weak: { name: "Weak", code: "2" },
-        base: { name: "Base", code: "3" },
-        strong: { name: "Strong", code: "4" },
-        stronger: { name: "Stronger", code: "5" },
-      },
-      weightCount: 23,
-      lightBg: "FFFFFF",
-      darkBg: "000000",
-      weightNames: "",
-    };
-
     // CACHE FOR FREQUENT CALLS
     // ============================================================================
     const colorCache = new Map();
