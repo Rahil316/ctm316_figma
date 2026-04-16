@@ -12,6 +12,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@figma/eslint-plugin-figma-plugins": "*",
+    "@figma/plugin-typings": "^1.124.0",
     "eslint": "^9.39.4"
   }
 }

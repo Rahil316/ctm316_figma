@@ -5,16 +5,27 @@
  */
 
 let tally = { created: 0, updated: 0, failed: 0 };
+let variableCache = [];
+let collectionCache = [];
 
 /**
- * 1. CreateCollection
+ * Sync cache with current Figma state
+ */
+async function syncCache() {
+  variableCache = await figma.variables.getLocalVariablesAsync();
+  collectionCache = await figma.variables.getLocalVariableCollectionsAsync();
+}
+
+/**
+ * 1. CreateCollection (Cached)
  */
 async function CreateCollection(collectionName) {
-  const collections = await figma.variables.getLocalVariableCollectionsAsync();
-  const existing = collections.find((c) => c.name === collectionName);
-
+  const existing = collectionCache.find((c) => c.name === collectionName);
   if (existing) return existing;
-  return figma.variables.createVariableCollection(collectionName);
+
+  const newCol = figma.variables.createVariableCollection(collectionName);
+  collectionCache.push(newCol);
+  return newCol;
 }
 
 /**
@@ -38,14 +49,12 @@ function createMode(collection, modeName) {
 }
 
 /**
- * 3. createVar
+ * 3. createVar (Optimized with Cache)
  */
 async function createVar(collection, modeId, vars) {
-  const allVariables = await figma.variables.getLocalVariablesAsync();
-
   for (const [varName, varType, varValue, varDescription] of vars) {
     try {
-      let variable = allVariables.find((v) => v.name === varName && v.variableCollectionId === collection.id);
+      let variable = variableCache.find((v) => v.name === varName && v.variableCollectionId === collection.id);
 
       if (!variable) {
         let type = "STRING";
@@ -53,9 +62,8 @@ async function createVar(collection, modeId, vars) {
         else if (varType === "FLOAT") type = "FLOAT";
         else if (varType === "BOOLEAN") type = "BOOLEAN";
 
-        // FIX: Passing the collection node (not just the ID) to resolve runtime error.
-        // Also using figma.variables namespace as it's the more consistent API signature in older typings.
         variable = figma.variables.createVariable(varName, collection, type);
+        variableCache.push(variable);
         tally.created++;
       } else {
         tally.updated++;
@@ -99,12 +107,11 @@ function hexToRgb(hex) {
  */
 async function runCreater(data) {
   tally = { created: 0, updated: 0, failed: 0 };
+  await syncCache();
 
   const rawCol = await CreateCollection("_raw");
   const contextualCol = await CreateCollection("contextual");
   const rawModeId = rawCol.modes[0].modeId;
-
-  const rawMapping = new Map();
 
   // STAGE 1: RAW
   if (data.raw) {
@@ -113,17 +120,9 @@ async function runCreater(data) {
       const varsToCreate = Object.keys(weights).map((w) => [weights[w].tknName, "COLOR", weights[w].value, `Base ${groupName} ${w}`]);
       await createVar(rawCol, rawModeId, varsToCreate);
     }
-
-    // Capture map after all raw vars are created
-    const allFinalVariables = await figma.variables.getLocalVariablesAsync();
-    allFinalVariables.forEach((v) => {
-      if (v.variableCollectionId === rawCol.id) {
-        rawMapping.set(v.name, v);
-      }
-    });
   }
 
-  // STAGE 2: CONTEXTUAL
+  // STAGE 2: CONTEXTUAL (Using updated cache)
   if (data.ctx) {
     for (const themeName in data.ctx) {
       const modeId = createMode(contextualCol, themeName);
@@ -135,7 +134,7 @@ async function runCreater(data) {
           const variations = roles[roleKey];
           const varsToCreate = Object.keys(variations).map((vKey) => {
             const varData = variations[vKey];
-            const targetVar = rawMapping.get(varData.valueRef || "");
+            const targetVar = variableCache.find((v) => v.name === varData.valueRef && v.variableCollectionId === rawCol.id);
             const valueAlias = targetVar ? { type: "VARIABLE_ALIAS", id: targetVar.id } : null;
 
             return [`${clrGroup}/${roleKey}/${vKey}`, "COLOR", valueAlias, `Theme: ${themeName}`];
@@ -150,7 +149,7 @@ async function runCreater(data) {
   figma.ui.postMessage({ type: "finish", tally });
 }
 
-figma.showUI(__html__, { width: 480, height: 840, themeColors: true });
+figma.showUI(__html__, { width: 480, height: 760, themeColors: true });
 
 figma.ui.onmessage = async (msg) => {
   try {
@@ -159,7 +158,10 @@ figma.ui.onmessage = async (msg) => {
       await runCreater(msg.data);
       console.log("Run-creater completed.");
     }
-    if (msg.type === "resize") figma.ui.resize(msg.width, msg.height);
+    if (msg.type === "resize") {
+      console.log("Resizing to:", msg.width, msg.height);
+      figma.ui.resize(msg.width, msg.height);
+    }
     if (msg.type === "cancel") figma.closePlugin();
   } catch (err) {
     console.error("Plugin Error:", err);
