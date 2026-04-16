@@ -9,7 +9,7 @@ let tally = { created: 0, updated: 0, failed: 0 };
 /**
  * 1. CreateCollection
  */
-async function CreateCollection(collectionName: string): Promise<VariableCollection> {
+async function CreateCollection(collectionName) {
   const collections = await figma.variables.getLocalVariableCollectionsAsync();
   const existing = collections.find((c) => c.name === collectionName);
 
@@ -20,7 +20,7 @@ async function CreateCollection(collectionName: string): Promise<VariableCollect
 /**
  * 2. createMode
  */
-function createMode(collection: VariableCollection, modeName: string): string {
+function createMode(collection, modeName) {
   const existing = collection.modes.find((m) => m.name === modeName);
   if (existing) return existing.modeId;
 
@@ -40,7 +40,7 @@ function createMode(collection: VariableCollection, modeName: string): string {
 /**
  * 3. createVar
  */
-async function createVar(collection: VariableCollection, modeId: string, vars: any[][]) {
+async function createVar(collection, modeId, vars) {
   const allVariables = await figma.variables.getLocalVariablesAsync();
 
   for (const [varName, varType, varValue, varDescription] of vars) {
@@ -48,7 +48,7 @@ async function createVar(collection: VariableCollection, modeId: string, vars: a
       let variable = allVariables.find((v) => v.name === varName && v.variableCollectionId === collection.id);
 
       if (!variable) {
-        let type: VariableResolvedDataType = "STRING";
+        let type = "STRING";
         if (varType === "COLOR" || varType === "hex") type = "COLOR";
         else if (varType === "FLOAT") type = "FLOAT";
         else if (varType === "BOOLEAN") type = "BOOLEAN";
@@ -80,7 +80,7 @@ async function createVar(collection: VariableCollection, modeId: string, vars: a
   }
 }
 
-function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+function hexToRgb(hex) {
   let cleanHex = hex.replace("#", "");
   if (cleanHex.length === 3)
     cleanHex = cleanHex
@@ -97,14 +97,14 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
 /**
  * PIPELINE
  */
-async function runCreater(data: any) {
+async function runCreater(data) {
   tally = { created: 0, updated: 0, failed: 0 };
 
   const rawCol = await CreateCollection("_raw");
   const contextualCol = await CreateCollection("contextual");
   const rawModeId = rawCol.modes[0].modeId;
 
-  const rawMapping = new Map<string, Variable>();
+  const rawMapping = new Map();
 
   // STAGE 1: RAW
   if (data.raw) {
@@ -115,8 +115,8 @@ async function runCreater(data: any) {
     }
 
     // Capture map after all raw vars are created
-    const allFinalVars = await figma.variables.getLocalVariablesAsync();
-    allFinalVars.forEach((v) => {
+    const allFinalVariables = await figma.variables.getLocalVariablesAsync();
+    allFinalVariables.forEach((v) => {
       if (v.variableCollectionId === rawCol.id) {
         rawMapping.set(v.name, v);
       }
@@ -161,7 +161,7 @@ figma.ui.onmessage = async (msg) => {
     }
     if (msg.type === "resize") figma.ui.resize(msg.width, msg.height);
     if (msg.type === "cancel") figma.closePlugin();
-  } catch (err: any) {
+  } catch (err) {
     console.error("Plugin Error:", err);
     figma.ui.postMessage({ type: "error", message: err.message || "An unknown error occurred in the plugin" });
   }
