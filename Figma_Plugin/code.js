@@ -1,16 +1,14 @@
 /**
- * ============================================================================
  * FIGMA COLOR SYSTEM GENERATOR
  * Organization:
  * 1. UI Initialization
  * 2. Message Router
  * 3. Config Translator  (appState → reference engine format)
- * 4. Export Formatters  (CSV / CSS / JSON)
+ * 4. Export Formatters  (CSV / CSS / JSON / SCSS)
  * 5. Figma Variable API (CRUD – _raw + contextual collections)
  * 6. Color Ramp Maker   (Linear / Balanced / Symmetric)
  * 7. Color System Generator (variableMaker – ramps + semantic tokens)
  * 8. Color Math Utilities  (WCAG-correct conversions from Utils.js)
- * ============================================================================
  */
 
 // 1. UI INITIALIZATION
@@ -35,10 +33,10 @@ figma.ui.onmessage = async (msg) => {
         const config = translateConfig(msg.state);
         const result = variableMaker(config);
         let content = "";
-        if (msg.exportType === "json")
-          content = JSON.stringify({ config, colorRamps: result.colorRamps, colorTokens: result.colorTokens, errors: result.errors }, null, 2);
+        if (msg.exportType === "json") content = JSON.stringify({ config, colorRamps: result.colorRamps, colorTokens: result.colorTokens, errors: result.errors }, null, 2);
         else if (msg.exportType === "csv") content = ExportFormatter.toCSV(result, config);
         else if (msg.exportType === "css") content = ExportFormatter.toCSS(result, config);
+        else if (msg.exportType === "scss") content = generateScss(result);
         figma.ui.postMessage({ type: "processed-data-response", content, exportType: msg.exportType });
         break;
       }
@@ -53,15 +51,12 @@ figma.ui.onmessage = async (msg) => {
   }
 };
 
-// 3. CONFIG TRANSLATOR
-// Converts appState (UI format) into the format expected by variableMaker.
+// 3. CONFIG TRANSLATOR: Converts appState (UI format) into the format expected by variableMaker.
 function translateConfig(appState) {
   const count = Math.max(1, parseInt(appState.colorStep) || 23);
 
   // Weight (step) names
-  const userWeightNames = appState.colorStepNames && appState.colorStepNames.trim()
-    ? appState.colorStepNames.split(",").map((n) => n.trim())
-    : null;
+  const userWeightNames = appState.colorStepNames && appState.colorStepNames.trim() ? appState.colorStepNames.split(",").map((n) => n.trim()) : null;
   let stepNames = null;
   if (userWeightNames && userWeightNames.length > 0) {
     const names = [...userWeightNames];
@@ -103,16 +98,16 @@ function translateConfig(appState) {
           // UI uses 1-based baseWeight; reference uses 0-based baseIndex
           baseIndex: Math.max(0, (parseInt(role.baseWeight) || 1) - 1),
         },
-      ])
+      ]),
     ),
     colorSteps: count,
     rampType: rampTypeMap[appState.colorStepMethod] || "Balanced",
     roleMapping: roleMappingMap[appState.roleMappingMethod] || "Contrast Based",
     colorStepNames: stepNames,
     roleStepNames,
-    modes: [
+    themes: [
       { name: "light", bg: themes[0].bg || "FFFFFF" },
-      { name: "dark",  bg: themes[1].bg || "000000" },
+      { name: "dark", bg: themes[1].bg || "000000" },
     ],
   };
 }
@@ -158,6 +153,65 @@ const ExportFormatter = {
   },
 };
 
+// 4b. SCSS EXPORT — ported from Web_App/JS/DocGen.js
+function scssSlug(str) {
+  if (!str) return "";
+  return String(str)
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function generateScss(result) {
+  if (!result || !result.colorRamps) return "";
+  const date = new Date().toISOString();
+  let scss = `// Color Tokens — Auto-generated SCSS\n// Generated: ${date}\n\n`;
+  scss += `// ============================================\n// RAW COLOR RAMPS\n// ============================================\n\n`;
+  for (const [group, weights] of Object.entries(result.colorRamps)) {
+    scss += `// ${group.toUpperCase()}\n`;
+    for (const [weight, data] of Object.entries(weights)) {
+      if (!data?.value) continue;
+      scss += `$${scssSlug(group)}-${scssSlug(String(weight))}: ${data.value};\n`;
+    }
+    scss += "\n";
+  }
+  scss += `// ============================================\n// LIGHT THEME TOKENS\n// ============================================\n\n$light-theme: (\n`;
+  if (result.colorTokens?.light) {
+    for (const [group, roles] of Object.entries(result.colorTokens.light)) {
+      for (const [, variations] of Object.entries(roles)) {
+        for (const [variation, data] of Object.entries(variations)) {
+          if (!data?.tknRef) continue;
+          const last = data.tknRef.lastIndexOf("-");
+          const varName = `${scssSlug(group)}-${scssSlug(data.role || group)}-${scssSlug(variation)}`;
+          const refGroup = scssSlug(data.tknRef.substring(0, last));
+          const refWeight = scssSlug(data.tknRef.substring(last + 1));
+          scss += `  "${varName}": $${refGroup}-${refWeight},\n`;
+        }
+      }
+    }
+  }
+  scss += ");\n\n";
+  scss += `// ============================================\n// DARK THEME TOKENS\n// ============================================\n\n$dark-theme: (\n`;
+  if (result.colorTokens?.dark) {
+    for (const [group, roles] of Object.entries(result.colorTokens.dark)) {
+      for (const [, variations] of Object.entries(roles)) {
+        for (const [variation, data] of Object.entries(variations)) {
+          if (!data?.tknRef) continue;
+          const last = data.tknRef.lastIndexOf("-");
+          const varName = `${scssSlug(group)}-${scssSlug(data.role || group)}-${scssSlug(variation)}`;
+          const refGroup = scssSlug(data.tknRef.substring(0, last));
+          const refWeight = scssSlug(data.tknRef.substring(last + 1));
+          scss += `  "${varName}": $${refGroup}-${refWeight},\n`;
+        }
+      }
+    }
+  }
+  scss += ");\n";
+  return scss;
+}
+
 // 5. FIGMA VARIABLE API (CRUD)
 const VariableManager = {
   tally: { created: 0, updated: 0, failed: 0 },
@@ -181,14 +235,9 @@ const VariableManager = {
     // STAGE 1: Raw Color Ramps → "_raw" collection
     if (scope === "all" || scope === "groups") {
       const rawCol = await this.getOrCreateCollection("_raw");
-      const modeId = rawCol.modes[0].modeId;
+      const modeId = rawCol.themes[0].modeId;
       for (const [colorName, ramp] of Object.entries(result.colorRamps)) {
-        const vars = Object.entries(ramp).map(([weightName, entry]) => [
-          `${colorName}/${weightName}`,
-          "COLOR",
-          entry.value,
-          `L:${entry.contrast.light.ratio}(${entry.contrast.light.rating}) D:${entry.contrast.dark.ratio}(${entry.contrast.dark.rating})`,
-        ]);
+        const vars = Object.entries(ramp).map(([weightName, entry]) => [`${colorName}/${weightName}`, "COLOR", entry.value, `L:${entry.contrast.light.ratio}(${entry.contrast.light.rating}) D:${entry.contrast.dark.ratio}(${entry.contrast.dark.rating})`]);
         await this.upsertVariables(rawCol, modeId, vars);
       }
     }
@@ -209,9 +258,7 @@ const VariableManager = {
               const dispName = roleStepNames[i] || refKey;
               const figmaName = `${colorName}/${roleName}/${dispName}`;
               const rawFigmaName = this.rawVarNameMap[token.tknRef];
-              const targetVar = rawFigmaName
-                ? this.cache.variables.find((cv) => cv.name === rawFigmaName && cv.variableCollectionId === rawCol.id)
-                : null;
+              const targetVar = rawFigmaName ? this.cache.variables.find((cv) => cv.name === rawFigmaName && cv.variableCollectionId === rawCol.id) : null;
               const value = targetVar ? { type: "VARIABLE_ALIAS", id: targetVar.id } : token.value;
               const note = token.isAdjusted ? " | ⚠ Adjusted" : "";
               return [figmaName, "COLOR", value, `${theme.toUpperCase()}${note}`];
@@ -222,7 +269,7 @@ const VariableManager = {
       }
     }
 
-    figma.ui.postMessage({ type: "finish", tally: this.tally });
+    figma.ui.postMessage({ type: "finish", tally: this.tally, errors: result ? result.errors : null });
   },
 
   async refreshCache() {
@@ -239,16 +286,16 @@ const VariableManager = {
   },
 
   ensureMode(collection, modeName) {
-    const existing = collection.modes.find((m) => m.name.toLowerCase() === modeName.toLowerCase());
+    const existing = collection.themes.find((m) => m.name.toLowerCase() === modeName.toLowerCase());
     if (existing) return existing.modeId;
-    if (collection.modes.length === 1 && collection.modes[0].name.toLowerCase().startsWith("mode")) {
-      collection.renameMode(collection.modes[0].modeId, modeName);
-      return collection.modes[0].modeId;
+    if (collection.themes.length === 1 && collection.themes[0].name.toLowerCase().startsWith("mode")) {
+      collection.renameMode(collection.themes[0].modeId, modeName);
+      return collection.themes[0].modeId;
     }
     try {
       return collection.addMode(modeName);
     } catch (e) {
-      return collection.modes[0].modeId;
+      return collection.themes[0].modeId;
     }
   },
 
@@ -285,8 +332,7 @@ function hexToFigmaRgb(hex) {
   return { r: rgb[0] / 255, g: rgb[1] / 255, b: rgb[2] / 255 };
 }
 
-// 6. COLOR RAMP MAKER
-// Simple hash cache: skip regeneration when config hasn't changed.
+// 6. COLOR RAMP MAKER: Simple hash cache: skip regeneration when config hasn't changed.
 let lastInputHash = null;
 let cachedOutput = null;
 
@@ -311,7 +357,9 @@ function colorRampMaker(hexIn, rampLength, rampType = "Balanced") {
     const output = [];
     for (let i = 1; i <= rampLength; i++) {
       const targetLum = Math.exp(minV + step * i) - 0.05;
-      let low = 0, high = 100, closestL = 50;
+      let low = 0,
+        high = 100,
+        closestL = 50;
       for (let j = 0; j < 30; j++) {
         const mid = (low + high) / 2;
         const midLum = relLum(hslToHex(hue, satu, mid));
@@ -333,7 +381,9 @@ function colorRampMaker(hexIn, rampLength, rampType = "Balanced") {
     const output = [];
     for (let i = 1; i <= rampLength; i++) {
       const targetLum = Math.exp(minV + step * i) - 0.05;
-      let low = 0, high = 100, closestL = 50;
+      let low = 0,
+        high = 100,
+        closestL = 50;
       for (let j = 0; j < 30; j++) {
         const mid = (low + high) / 2;
         const midLum = relLum(hslToHex(hue, satu, mid));
@@ -371,16 +421,16 @@ function variableMaker(config) {
     colors: config.colors.map((g) => ({ ...g, value: normalizeHex(g.value) })),
     rampLength: config.colorSteps,
     rampType: config.rampType,
-    lightBg: normalizeHex(config.modes[0].bg),
-    darkBg: normalizeHex(config.modes[1].bg),
+    lightBg: normalizeHex(config.themes[0].bg),
+    darkBg: normalizeHex(config.themes[1].bg),
     roles: config.roles,
     roleMapping: config.roleMapping,
   });
 
   if (inputHash === lastInputHash && cachedOutput) return cachedOutput;
 
-  const lightBg = normalizeHex(config.modes[0].bg);
-  const darkBg = normalizeHex(config.modes[1].bg);
+  const lightBg = normalizeHex(config.themes[0].bg);
+  const darkBg = normalizeHex(config.themes[1].bg);
   const clrRampsCollection = Object.create(null);
   const tokensCollection = { light: Object.create(null), dark: Object.create(null) };
   const errors = { critical: [], warnings: [], notices: [] };
@@ -407,7 +457,7 @@ function variableMaker(config) {
   }
 
   // Generate semantic tokens for each mode × color × role
-  for (const mode of config.modes) {
+  for (const mode of config.themes) {
     const modeName = mode.name;
     const conTheme = tokensCollection[modeName];
 
@@ -450,34 +500,52 @@ function variableMaker(config) {
 
           // Fallback: use best available contrast
           if (baseIdx === -1) {
-            let bestIdx = -1, maxContrast = -1;
+            let bestIdx = -1,
+              maxContrast = -1;
             for (let i = 0; i < rampLength; i++) {
               const c = clrRampsCollection[clrName][stepNames[i]].contrast[modeName].ratio;
-              if (c > maxContrast) { bestIdx = i; maxContrast = c; }
+              if (c > maxContrast) {
+                bestIdx = i;
+                maxContrast = c;
+              }
             }
             baseIdx = bestIdx !== -1 ? bestIdx : rampLength >> 1;
-            errors.critical.push({ color: clrName, role: roleName, theme: modeName,
-              error: `Cannot meet minimum contrast ${minC}. Using closest available.` });
+            errors.critical.push({ color: clrName, role: roleName, theme: modeName, error: `Cannot meet minimum contrast ${minC}. Using closest available.` });
           }
 
-          // Clamp so all 5 variations fit within ramp bounds
+          // Clamp so all 5 variations fit within ramp bounds; warn if base moved from contrast-found position
           const maxOffset = 2 * spread;
-          if (baseIdx < maxOffset) baseIdx = maxOffset;
-          if (baseIdx > rampLength - 1 - maxOffset) baseIdx = rampLength - 1 - maxOffset;
+          const minAllowed = maxOffset;
+          const maxAllowed = rampLength - 1 - maxOffset;
+          let adjustedBase = false;
+          if (baseIdx < minAllowed) {
+            baseIdx = minAllowed;
+            adjustedBase = true;
+          }
+          if (baseIdx > maxAllowed) {
+            baseIdx = maxAllowed;
+            adjustedBase = true;
+          }
+          if (adjustedBase) errors.warnings.push({ color: clrName, role: roleName, theme: modeName, warning: `Base index clamped to ${baseIdx} due to spread constraints.` });
 
           const offsetValues = [
             { key: "weakest", offset: -2 * spread },
-            { key: "weak",    offset: -spread      },
-            { key: "base",    offset: 0            },
-            { key: "strong",  offset:  spread      },
-            { key: "stronger",offset:  2 * spread  },
+            { key: "weak", offset: -spread },
+            { key: "base", offset: 0 },
+            { key: "strong", offset: spread },
+            { key: "stronger", offset: 2 * spread },
           ];
 
           for (const { key: variation, offset: pureOffset } of offsetValues) {
             let idx = baseIdx + pureOffset * contrastGrowthDir;
             let adjusted = false;
-            if (idx < 0) { idx = 0; adjusted = true; }
-            else if (idx >= rampLength) { idx = rampLength - 1; adjusted = true; }
+            if (idx < 0) {
+              idx = 0;
+              adjusted = true;
+            } else if (idx >= rampLength) {
+              idx = rampLength - 1;
+              adjusted = true;
+            }
 
             const data = clrRampsCollection[clrName][stepNames[idx]];
             conRole[variation] = {
@@ -491,11 +559,9 @@ function variableMaker(config) {
               variationOffset: pureOffset,
               isAdjusted: adjusted,
             };
-            if (adjusted) errors.warnings.push({ color: clrName, role: roleName, variation, theme: modeName,
-              warning: `Variation '${variation}' clamped due to overflow.` });
+            if (adjusted) errors.warnings.push({ color: clrName, role: roleName, variation, theme: modeName, warning: `Variation '${variation}' clamped due to overflow.` });
           }
         }
-
       } else if (config.roleMapping === "Manual Base Index") {
         for (const roleName of roleNames) {
           const role = roles[roleName];
@@ -509,28 +575,37 @@ function variableMaker(config) {
 
           let baseIdx = role.baseIndex !== undefined ? parseInt(role.baseIndex) : rampLength >> 1;
           const maxOffset = 2 * spread;
-          if (baseIdx < maxOffset) {
-            baseIdx = maxOffset;
-            errors.warnings.push({ color: clrName, role: roleName, theme: modeName, warning: `Base index clamped to ${baseIdx}.` });
+          const minAllowed = maxOffset;
+          const maxAllowed = rampLength - 1 - maxOffset;
+          let adjustedBase = false;
+          if (baseIdx < minAllowed) {
+            baseIdx = minAllowed;
+            adjustedBase = true;
           }
-          if (baseIdx > rampLength - 1 - maxOffset) {
-            baseIdx = rampLength - 1 - maxOffset;
-            errors.warnings.push({ color: clrName, role: roleName, theme: modeName, warning: `Base index clamped to ${baseIdx}.` });
+          if (baseIdx > maxAllowed) {
+            baseIdx = maxAllowed;
+            adjustedBase = true;
           }
+          if (adjustedBase) errors.warnings.push({ color: clrName, role: roleName, theme: modeName, warning: `Base index clamped to ${baseIdx} due to spread constraints.` });
 
           const offsetValues = [
             { key: "weakest", offset: -2 * spread },
-            { key: "weak",    offset: -spread      },
-            { key: "base",    offset: 0            },
-            { key: "strong",  offset:  spread      },
-            { key: "stronger",offset:  2 * spread  },
+            { key: "weak", offset: -spread },
+            { key: "base", offset: 0 },
+            { key: "strong", offset: spread },
+            { key: "stronger", offset: 2 * spread },
           ];
 
           for (const { key: variation, offset: pureOffset } of offsetValues) {
             let idx = baseIdx + pureOffset * contrastGrowthDir;
             let adjusted = false;
-            if (idx < 0) { idx = 0; adjusted = true; }
-            else if (idx >= rampLength) { idx = rampLength - 1; adjusted = true; }
+            if (idx < 0) {
+              idx = 0;
+              adjusted = true;
+            } else if (idx >= rampLength) {
+              idx = rampLength - 1;
+              adjusted = true;
+            }
 
             const data = clrRampsCollection[clrName][stepNames[idx]];
             conRole[variation] = {
@@ -545,8 +620,7 @@ function variableMaker(config) {
               isAdjusted: adjusted,
               manualBaseIndex: baseIdx,
             };
-            if (adjusted) errors.warnings.push({ color: clrName, role: roleName, variation, theme: modeName,
-              warning: `Variation '${variation}' clamped due to overflow.` });
+            if (adjusted) errors.warnings.push({ color: clrName, role: roleName, variation, theme: modeName, warning: `Variation '${variation}' clamped due to overflow.` });
           }
         }
       }
@@ -559,8 +633,7 @@ function variableMaker(config) {
   return output;
 }
 
-// 8. COLOR MATH UTILITIES
-// Pure, stateless functions — WCAG 2.1 compliant. (Ported from Utils.js reference.)
+// 8. COLOR MATH UTILITIES: Pure, stateless functions — WCAG 2.1 compliant. (Ported from Utils.js reference.)
 
 function validHex(hex) {
   if (typeof hex !== "string") return false;
@@ -570,7 +643,11 @@ function validHex(hex) {
 function normalizeHex(hex) {
   if (!validHex(hex)) return null;
   hex = hex.trim().replace(/^#/, "");
-  if (hex.length === 3) hex = hex.split("").map((c) => c + c).join("");
+  if (hex.length === 3)
+    hex = hex
+      .split("")
+      .map((c) => c + c)
+      .join("");
   return "#" + hex.toUpperCase();
 }
 
@@ -583,17 +660,29 @@ function hexToRgb(hex) {
 
 function rgbToHsl(r, g, b) {
   if ([r, g, b].some((v) => typeof v !== "number" || v < 0 || v > 255)) return null;
-  r /= 255; g /= 255; b /= 255;
-  const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  let h, s, l = (max + min) / 2;
-  if (max === min) { h = s = 0; }
-  else {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  const max = Math.max(r, g, b),
+    min = Math.min(r, g, b);
+  let h,
+    s,
+    l = (max + min) / 2;
+  if (max === min) {
+    h = s = 0;
+  } else {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
     switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      default: h = (r - g) / d + 4; break;
+      case r:
+        h = (g - b) / d + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / d + 2;
+        break;
+      default:
+        h = (r - g) / d + 4;
+        break;
     }
     h *= 60;
   }
@@ -601,19 +690,21 @@ function rgbToHsl(r, g, b) {
 }
 
 function hslToRgb(h, s, l) {
-  if (typeof h !== "number" || typeof s !== "number" || typeof l !== "number" ||
-      h < 0 || h > 360 || s < 0 || s > 100 || l < 0 || l > 100) return null;
-  s /= 100; l /= 100;
+  if (typeof h !== "number" || typeof s !== "number" || typeof l !== "number" || h < 0 || h > 360 || s < 0 || s > 100 || l < 0 || l > 100) return null;
+  s /= 100;
+  l /= 100;
   const c = (1 - Math.abs(2 * l - 1)) * s;
   const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
   const m = l - c / 2;
-  let r = 0, g = 0, b = 0;
-  if      (h < 60)  [r, g, b] = [c, x, 0];
+  let r = 0,
+    g = 0,
+    b = 0;
+  if (h < 60) [r, g, b] = [c, x, 0];
   else if (h < 120) [r, g, b] = [x, c, 0];
   else if (h < 180) [r, g, b] = [0, c, x];
   else if (h < 240) [r, g, b] = [0, x, c];
   else if (h < 300) [r, g, b] = [x, 0, c];
-  else              [r, g, b] = [c, 0, x];
+  else [r, g, b] = [c, 0, x];
   return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
 }
 
@@ -629,9 +720,18 @@ function hexToHsl(hex) {
   return rgbToHsl(...rgb);
 }
 
-function hexToHue(hex) { const hsl = hexToHsl(hex); return hsl ? hsl[0] : null; }
-function hexToSat(hex) { const hsl = hexToHsl(hex); return hsl ? hsl[1] : null; }
-function hexToLum(hex) { const hsl = hexToHsl(hex); return hsl ? hsl[2] : null; }
+function hexToHue(hex) {
+  const hsl = hexToHsl(hex);
+  return hsl ? hsl[0] : null;
+}
+function hexToSat(hex) {
+  const hsl = hexToHsl(hex);
+  return hsl ? hsl[1] : null;
+}
+function hexToLum(hex) {
+  const hsl = hexToHsl(hex);
+  return hsl ? hsl[2] : null;
+}
 
 // WCAG 2.1 relative luminance
 function relLum(hex) {
@@ -645,9 +745,11 @@ function relLum(hex) {
 }
 
 function contrastRatio(hex1, hex2) {
-  const n1 = normalizeHex(hex1), n2 = normalizeHex(hex2);
+  const n1 = normalizeHex(hex1),
+    n2 = normalizeHex(hex2);
   if (!n1 || !n2) return null;
-  const l1 = relLum(n1), l2 = relLum(n2);
+  const l1 = relLum(n1),
+    l2 = relLum(n2);
   if (l1 === null || l2 === null) return null;
   return Number(((Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05)).toFixed(2));
 }
@@ -656,9 +758,9 @@ function contrastRatio(hex1, hex2) {
 function contrastRating(hex1, hex2) {
   const ratio = contrastRatio(hex1, hex2);
   if (ratio === null) return null;
-  if (ratio < 3)   return "Fail";
+  if (ratio < 3) return "Fail";
   if (ratio < 4.5) return "AA Large";
-  if (ratio < 7)   return "AA";
+  if (ratio < 7) return "AA";
   return "AAA";
 }
 
@@ -666,4 +768,14 @@ function seriesMaker(x) {
   const out = [];
   for (let i = 1; i <= x; i++) out.push(i);
   return out;
+}
+
+function slugify(str) {
+  if (!str) return "";
+  return str
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
